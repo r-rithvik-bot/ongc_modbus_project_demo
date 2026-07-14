@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Analytics</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div class="container-fluid px-3 py-4">
+
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <div class="tank-icon"><i class="bi bi-graph-up"></i></div>
+      <div><h4 class="text-white fw-bold mb-0">Data Analytics</h4>
+           <small class="text-muted">Statistical summary &amp; trend analysis from SQLite</small></div>
+    </div>
+    <form method="GET" action="/analytics" class="d-flex gap-2 align-items-center">
+      <select class="form-select ongc-input" name="tank_number" style="width:160px;">
+        <option value="">All Tanks</option>
+        {% for t in range(1, num_tanks+1) %}
+        <option value="{{ t }}" {% if tank_filter==t %}selected{% endif %}>Tank {{ t }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-info text-dark fw-bold"><i class="bi bi-filter me-1"></i>Filter</button>
+    </form>
+  </div>
+
+  {% if report.stats %}
+    {% for row in report.stats %}
+    <div class="ongc-card p-4 mb-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="tank-icon" style="font-size:.9rem;padding:.4rem .7rem;"><i class="bi bi-archive-fill"></i></div>
+        <h5 class="text-white mb-0 fw-bold">Tank {{ row.tank_number }}
+          <small class="text-muted fw-normal" style="font-size:.75rem;">{{ row.total_readings }} readings</small>
+        </h5>
+      </div>
+      <div class="row g-3">
+        {% for param, icon, label, avg, mx, mn, trend in [
+          ('pressure','bi-speedometer','Pressure (PSI)',row.avg_pressure,row.max_pressure,row.min_pressure,row.pressure_trend),
+          ('temperature','bi-thermometer-half','Temperature (°C)',row.avg_temperature,row.max_temperature,row.min_temperature,row.temperature_trend),
+          ('flow','bi-wind','Flow Rate (m³/h)',row.avg_flow,row.max_flow,row.min_flow,row.flow_trend),
+          ('level','bi-water','Tank Level (%)',row.avg_level,row.max_level,row.min_level,row.level_trend)
+        ] %}
+        <div class="col-md-3 col-6">
+          <div class="stat-card {{ param }}-stat">
+            <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
+            <div class="stat-title">{{ label }}</div>
+            <div class="stat-row"><span>Avg</span><strong>{{ avg }}</strong></div>
+            <div class="stat-row"><span>Max</span><strong class="text-danger">{{ mx }}</strong></div>
+            <div class="stat-row"><span>Min</span><strong class="text-success">{{ mn }}</strong></div>
+            <div class="trend-row">
+              {% if trend == 'Increasing' %}<i class="bi bi-arrow-up-circle-fill text-danger"></i>
+              {% elif trend == 'Decreasing' %}<i class="bi bi-arrow-down-circle-fill text-info"></i>
+              {% else %}<i class="bi bi-dash-circle-fill text-success"></i>{% endif %}
+              <span>{{ trend }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Tabs for Daily / Weekly / Monthly -->
+    <div class="ongc-card p-4">
+      <ul class="nav nav-tabs mb-3" id="summaryTabs">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#daily" style="color:#00b4ff;background:rgba(0,180,255,.08);border-color:rgba(0,180,255,.2);">Daily (7 days)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#weekly" style="color:#7eb8d4;">Weekly (30 days)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#monthly" style="color:#7eb8d4;">Monthly</a></li>
+      </ul>
+      <div class="tab-content">
+        {% for tab_id, data in [('daily', report.daily), ('weekly', report.weekly), ('monthly', report.monthly)] %}
+        <div class="tab-pane fade {% if tab_id=='daily' %}show active{% endif %}" id="{{ tab_id }}">
+          <div class="table-responsive">
+            <table class="table ongc-table mb-0">
+              <thead><tr>
+                <th>Period</th><th>Tank</th><th>Avg Pressure</th>
+                <th>Avg Temp</th><th>Avg Flow</th><th>Avg Level</th><th>Readings</th>
+              </tr></thead>
+              <tbody>
+                {% if data %}
+                  {% for d in data %}
+                  <tr>
+                    <td>{{ d.day or d.week or d.month }}</td>
+                    <td><span class="badge bg-info text-dark">Tank {{ d.tank_number }}</span></td>
+                    <td>{{ d.avg_pressure }}</td><td>{{ d.avg_temperature }}</td>
+                    <td>{{ d.avg_flow }}</td><td>{{ d.avg_level }}</td>
+                    <td class="text-muted">{{ d.readings }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="7" class="text-center text-muted py-4">No data for this period</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  {% else %}
+    <div class="ongc-card p-5 text-center">
+      <i class="bi bi-bar-chart display-4 text-muted d-block mb-3"></i>
+      <h5 class="text-muted">No data available yet</h5>
+      <p class="text-muted">Connect to a Modbus device and let data accumulate.</p>
+      <a href="/config" class="btn btn-info text-dark mt-2">Go to Configuration</a>
+    </div>
+  {% endif %}
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

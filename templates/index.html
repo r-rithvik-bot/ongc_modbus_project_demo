@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Industrial Modbus TCP Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <style>
+    body.home-page { margin:0;padding:0;
+      background:radial-gradient(ellipse at 20% 50%,#0a1628 0%,#0d2040 40%,#061020 100%);
+      min-height:100vh;overflow-x:hidden;font-family:'Segoe UI',system-ui,sans-serif; }
+    .grid-overlay { position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(rgba(0,180,255,.04) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(0,180,255,.04) 1px,transparent 1px);
+      background-size:48px 48px;animation:gridScroll 20s linear infinite;pointer-events:none; }
+    @keyframes gridScroll{0%{background-position:0 0}100%{background-position:48px 48px}}
+    .radar{position:fixed;bottom:-120px;right:-120px;width:500px;height:500px;z-index:0;pointer-events:none;}
+    .radar-ring{position:absolute;border-radius:50%;border:1px solid rgba(0,180,255,.15);animation:radar-pulse 4s ease-out infinite;}
+    .radar-ring:nth-child(1){inset:0;animation-delay:0s}.radar-ring:nth-child(2){inset:10%;animation-delay:1s}
+    .radar-ring:nth-child(3){inset:20%;animation-delay:2s}.radar-ring:nth-child(4){inset:30%;animation-delay:3s}
+    @keyframes radar-pulse{0%{opacity:.6;transform:scale(.9)}100%{opacity:0;transform:scale(1.1)}}
+    .home-content{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:2rem 1rem;text-align:center;}
+    .ongc-logo-wrap{margin-bottom:1.8rem;animation:fadeDown .8s ease both}
+    .ongc-logo-wrap img{width:130px;height:130px;border-radius:50%;object-fit:contain;background:#fff;
+      padding:6px;box-shadow:0 0 0 4px rgba(0,180,255,.3),0 0 40px rgba(0,180,255,.2);transition:box-shadow .3s}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:blink 1.2s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .main-title{font-size:clamp(1.6rem,5vw,3rem);font-weight:800;line-height:1.15;color:#fff;
+      text-shadow:0 2px 20px rgba(0,180,255,.4);margin:.4rem 0 .8rem;animation:fadeDown .8s .2s ease both}
+    .main-title span{color:#00b4ff}
+    .enter-btn{display:inline-flex;align-items:center;gap:.8rem;
+      background:linear-gradient(135deg,#0070cc,#00b4ff);color:#fff;font-size:1.05rem;font-weight:700;
+      letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:50px;padding:1rem 3rem;
+      box-shadow:0 4px 30px rgba(0,180,255,.4);text-decoration:none;transition:all .3s ease;animation:fadeUp .8s .5s ease both}
+    .enter-btn:hover{background:linear-gradient(135deg,#0085e6,#33c3ff);box-shadow:0 6px 40px rgba(0,180,255,.6);transform:translateY(-3px);color:#fff}
+    .team-card{background:rgba(255,255,255,.04);border:1px solid rgba(0,180,255,.18);border-radius:12px;
+      padding:1.4rem 2.4rem;max-width:480px;width:100%;margin-bottom:2rem;animation:fadeUp .8s .4s ease both}
+    .feature-pills{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:2rem;animation:fadeUp .8s .45s ease both}
+    .feature-pill{background:rgba(0,180,255,.08);border:1px solid rgba(0,180,255,.2);border-radius:20px;
+      padding:.3rem .9rem;font-size:.72rem;color:#00b4ff;letter-spacing:.06em}
+    @keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .home-footer{position:fixed;bottom:0;left:0;right:0;z-index:10;background:rgba(5,16,36,.85);
+      border-top:1px solid rgba(0,180,255,.12);padding:.45rem 1.5rem;
+      display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:#4a7a94;letter-spacing:.06em}
+  </style>
+</head>
+<body class="home-page">
+  <div class="grid-overlay"></div>
+  <div class="radar"><div class="radar-ring"></div><div class="radar-ring"></div><div class="radar-ring"></div><div class="radar-ring"></div></div>
+  <div class="home-content">
+    <div class="ongc-logo-wrap">
+      <img src="{{ url_for('static', filename='images/ongc_logo.png') }}" alt="ONGC Logo"/>
+    </div>
+    <div class="d-flex align-items-center gap-2 mb-3" style="font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:#00b4ff;animation:fadeDown .8s .1s ease both">
+      <span class="status-dot"></span> System Online &nbsp;|&nbsp; Modbus TCP Ready
+    </div>
+    <div style="font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;letter-spacing:.12em;color:#e8f4fd;text-transform:uppercase;animation:fadeDown .8s .15s ease both">
+      Oil &amp; Natural Gas Corporation Limited
+    </div>
+    <div style="font-size:clamp(.9rem,2.5vw,1.15rem);color:#00b4ff;margin-top:.2rem;animation:fadeDown .8s .15s ease both">
+      Cauvery Asset &mdash; Karaikal
+    </div>
+    <h1 class="main-title">Industrial <span>Modbus TCP</span><br>Monitoring &amp; Analytics Dashboard</h1>
+    <p style="font-size:clamp(.85rem,2vw,1.05rem);color:#7eb8d4;max-width:680px;line-height:1.6;margin-bottom:1rem;animation:fadeDown .8s .25s ease both">
+      Real-time SCADA data acquisition · AI Predictive Maintenance · Email &amp; SMS Alerts · Full Analytics
+    </p>
+    <div class="feature-pills">
+      <span class="feature-pill"><i class="bi bi-hdd-network me-1"></i>Modbus TCP</span>
+      <span class="feature-pill"><i class="bi bi-cpu me-1"></i>AI Prediction</span>
+      <span class="feature-pill"><i class="bi bi-envelope me-1"></i>Email Alerts</span>
+      <span class="feature-pill"><i class="bi bi-phone me-1"></i>SMS Alerts</span>
+      <span class="feature-pill"><i class="bi bi-database me-1"></i>SQLite</span>
+      <span class="feature-pill"><i class="bi bi-shield-lock me-1"></i>Role Auth</span>
+      <span class="feature-pill"><i class="bi bi-file-earmark-pdf me-1"></i>PDF Reports</span>
+    </div>
+    <div class="team-card text-start">
+      <div style="color:#00b4ff;letter-spacing:.12em;text-transform:uppercase;font-size:.72rem;margin-bottom:.8rem">
+        <i class="bi bi-people-fill me-2"></i>Project Team
+      </div>
+      <div style="color:#cde8f5;font-size:.92rem;margin-bottom:.3rem"><i class="bi bi-person-fill-check text-info me-2"></i>R. Rithvik</div>
+      <div style="color:#cde8f5;font-size:.92rem;margin-bottom:.3rem"><i class="bi bi-person-fill-check text-info me-2"></i>J. Gopi Ganesh</div>
+      <div style="border-top:1px solid rgba(0,180,255,.12);margin-top:.8rem;padding-top:.8rem;color:#8ab5cc;font-size:.82rem">
+        <i class="bi bi-award-fill me-2"></i>Mentor: <span style="color:#e8f4fd;font-weight:600;">[ Mentor Name ]</span>
+      </div>
+    </div>
+    <a href="/config" class="enter-btn"><i class="bi bi-power"></i>ENTER DASHBOARD<i class="bi bi-chevron-right"></i></a>
+  </div>
+  <div class="home-footer">
+    <span>ONGC Cauvery Asset &copy; 2024</span>
+    <span>Industrial Modbus TCP Dashboard v2 &nbsp;|&nbsp; Internship Project</span>
+    <span>Confidential &amp; Proprietary</span>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
