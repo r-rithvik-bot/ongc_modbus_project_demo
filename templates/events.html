@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Event Log</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div class="container-fluid px-3 py-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="tank-icon"><i class="bi bi-journal-text"></i></div>
+    <div><h4 class="text-white fw-bold mb-0">System Event Log</h4>
+         <small class="text-muted">All logins, config changes, alerts, and exports — latest 300</small></div>
+  </div>
+
+  <div class="ongc-card p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table ongc-table mb-0">
+        <thead>
+          <tr><th>#</th><th>Timestamp</th><th>User</th><th>Event</th><th>Detail</th></tr>
+        </thead>
+        <tbody>
+          {% if logs %}
+            {% for log in logs %}
+            <tr>
+              <td class="text-muted">{{ log.id }}</td>
+              <td style="font-size:.78rem;">{{ log.timestamp }}</td>
+              <td>
+                {% if log.username %}
+                <span class="badge bg-info text-dark">{{ log.username }}</span>
+                {% else %}<span class="text-muted">system</span>{% endif %}
+              </td>
+              <td>
+                {% set ev = log.event %}
+                {% if 'LOGIN' in ev %}<span class="badge bg-success">{{ ev }}</span>
+                {% elif 'LOGOUT' in ev %}<span class="badge bg-secondary">{{ ev }}</span>
+                {% elif 'ALERT' in ev or 'ERROR' in ev %}<span class="badge bg-danger">{{ ev }}</span>
+                {% elif 'CONFIG' in ev %}<span class="badge bg-warning text-dark">{{ ev }}</span>
+                {% elif 'EMAIL' in ev or 'SMS' in ev %}<span class="badge bg-info text-dark">{{ ev }}</span>
+                {% elif 'EXPORT' in ev %}<span class="badge bg-primary">{{ ev }}</span>
+                {% else %}<span class="badge bg-dark border border-secondary">{{ ev }}</span>{% endif %}
+              </td>
+              <td style="font-size:.78rem;color:#7eb8d4;">{{ log.detail or '—' }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-5">
+              <i class="bi bi-journal display-6 d-block mb-2"></i>No events recorded yet.
+            </td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

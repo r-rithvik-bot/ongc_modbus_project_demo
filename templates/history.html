@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – History</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div class="container-fluid px-3 py-4">
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="tank-icon"><i class="bi bi-clock-history"></i></div>
+    <div><h4 class="text-white fw-bold mb-0">Historical Records</h4>
+         <small class="text-muted">All Modbus readings stored in SQLite</small></div>
+  </div>
+
+  <div class="ongc-card p-3 mb-4">
+    <form method="GET" action="/history" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label ongc-label">Tank Number</label>
+        <select class="form-select ongc-input" name="tank_number">
+          <option value="">All Tanks</option>
+          {% for t in range(1, num_tanks+1) %}
+          <option value="{{ t }}" {% if tank_filter==t %}selected{% endif %}>Tank {{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label ongc-label">Date</label>
+        <input type="date" class="form-control ongc-input" name="date_filter" value="{{ date_filter }}"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label ongc-label">Time From</label>
+        <input type="time" class="form-control ongc-input" name="time_filter" value="{{ time_filter }}"/>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-info text-dark fw-bold flex-fill">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+        <a href="/history" class="btn btn-outline-secondary">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+    <span class="text-muted" style="font-size:.82rem;">
+      <i class="bi bi-database me-1 text-info"></i>{{ records|length }} record(s) found (latest 200)
+    </span>
+    {% if session.get('role') == 'Admin' %}
+    <a href="/reports/csv{% if tank_filter %}?tank_number={{ tank_filter }}{% endif %}"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="ongc-card p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table ongc-table mb-0">
+        <thead>
+          <tr><th>#</th><th>Timestamp</th><th>Tank</th>
+              <th>Pressure (PSI)</th><th>Temperature (°C)</th>
+              <th>Flow (m³/h)</th><th>Level (%)</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% if records %}
+            {% for r in records %}
+            <tr>
+              <td class="text-muted">{{ r.id }}</td>
+              <td>{{ r.timestamp }}</td>
+              <td><span class="badge bg-info text-dark">Tank {{ r.tank_number }}</span></td>
+              <td class="{% if r.pressure > 145 %}text-danger fw-bold{% endif %}">
+                {{ r.pressure }}{% if r.pressure > 145 %} <i class="bi bi-exclamation-triangle-fill"></i>{% endif %}
+              </td>
+              <td class="{% if r.temperature > 45 %}text-danger fw-bold{% endif %}">
+                {{ r.temperature }}{% if r.temperature > 45 %} <i class="bi bi-exclamation-triangle-fill"></i>{% endif %}
+              </td>
+              <td>{{ r.flow_rate }}</td>
+              <td>{% if r.tank_level > 90 %}<span class="text-warning fw-bold">{{ r.tank_level }} <i class="bi bi-exclamation-circle"></i></span>
+                  {% elif r.tank_level < 20 %}<span class="text-danger fw-bold">{{ r.tank_level }} <i class="bi bi-exclamation-circle"></i></span>
+                  {% else %}{{ r.tank_level }}{% endif %}</td>
+              <td>{% if r.pressure > 145 or r.temperature > 45 %}<span class="badge bg-danger">ALERT</span>
+                  {% elif r.tank_level > 90 or r.tank_level < 20 %}<span class="badge bg-warning text-dark">WARNING</span>
+                  {% else %}<span class="badge bg-success">NORMAL</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-inbox display-6 d-block mb-2"></i>No records found.
+            </td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

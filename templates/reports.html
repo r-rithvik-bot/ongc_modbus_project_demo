@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Reports</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="tank-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div><h4 class="text-white fw-bold mb-0">Export Reports</h4>
+             <small class="text-muted">Download data from the SQLite database</small></div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat,msg in messages %}
+          <div class="alert alert-{{ cat }} py-2 mb-3" style="font-size:.85rem;">
+            <i class="bi bi-info-circle-fill me-1"></i>{{ msg }}
+          </div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="ongc-card p-3 mb-4">
+        <label class="form-label ongc-label mb-2"><i class="bi bi-filter me-1 text-info"></i>Filter by Tank</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <button onclick="setTank('')" class="tank-filter-btn active" id="btn-all">All Tanks</button>
+          {% for t in range(1, num_tanks+1) %}
+          <button onclick="setTank('{{ t }}')" class="tank-filter-btn" id="btn-{{ t }}">Tank {{ t }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="report-card">
+            <div class="report-card-icon csv-icon"><i class="bi bi-filetype-csv"></i></div>
+            <h5 class="text-white fw-bold mt-3">CSV Export</h5>
+            <p class="text-muted" style="font-size:.85rem;">All sensor readings as comma-separated file. Compatible with Excel, LibreOffice, and any analytics tool.</p>
+            <ul class="text-muted" style="font-size:.8rem;">
+              <li>ID, Timestamp, Tank, Pressure, Temperature, Flow, Level</li>
+              <li>All records — unlimited rows</li>
+              <li>Event logged automatically</li>
+            </ul>
+            <a id="csv-link" href="/reports/csv" class="btn-report btn-csv">
+              <i class="bi bi-download me-2"></i>Download CSV
+            </a>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="report-card">
+            <div class="report-card-icon pdf-icon"><i class="bi bi-filetype-pdf"></i></div>
+            <h5 class="text-white fw-bold mt-3">PDF Report</h5>
+            <p class="text-muted" style="font-size:.85rem;">Professional print-ready report. Opens in a new tab — use Ctrl+P to save as PDF.</p>
+            <ul class="text-muted" style="font-size:.8rem;">
+              <li>Analytics summary (avg/max/min)</li>
+              <li>Latest 200 records table</li>
+              <li>ONGC branding &amp; timestamp</li>
+            </ul>
+            <a id="pdf-link" href="/reports/pdf" target="_blank" class="btn-report btn-pdf">
+              <i class="bi bi-printer me-2"></i>Open PDF Report
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 ongc-card p-3">
+        <div class="d-flex gap-2">
+          <i class="bi bi-info-circle-fill text-info mt-1"></i>
+          <div style="font-size:.82rem;color:#7eb8d4;">
+            All data is exported directly from <code>database/ongc_data.db</code>.
+            Every export is logged in the Event Log.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+function setTank(t) {
+  document.querySelectorAll('.tank-filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(t === '' ? 'btn-all' : 'btn-' + t).classList.add('active');
+  const qs = t ? '?tank_number=' + t : '';
+  document.getElementById('csv-link').href = '/reports/csv' + qs;
+  document.getElementById('pdf-link').href = '/reports/pdf' + qs;
+}
+</script>
+</body>
+</html>

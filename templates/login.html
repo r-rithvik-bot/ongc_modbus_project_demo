@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Login</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="login-page">
+  <div class="login-card text-center">
+    <img src="{{ url_for('static', filename='images/ongc_logo.png') }}" alt="ONGC"/>
+    <div class="login-title">ONGC Cauvery Asset</div>
+    <div class="login-sub">Industrial Modbus TCP Monitoring Dashboard v2</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat,msg in messages %}
+        <div class="alert alert-{{ cat }} py-2 text-start" style="font-size:.83rem;">
+          <i class="bi bi-info-circle-fill me-1"></i>{{ msg }}
+        </div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}" class="text-start">
+      <div class="mb-3">
+        <label class="form-label ongc-label"><i class="bi bi-person-fill me-2 text-info"></i>Username</label>
+        <input type="text" class="form-control ongc-input" name="username" required autofocus/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label ongc-label"><i class="bi bi-lock-fill me-2 text-info"></i>Password</label>
+        <input type="password" class="form-control ongc-input" name="password" required/>
+      </div>
+      <div class="mb-4 d-flex align-items-center gap-2">
+        <input type="checkbox" class="form-check-input" name="remember" id="remember"
+               style="border-color:rgba(0,180,255,.4);background:transparent;"/>
+        <label class="form-check-label" for="remember" style="font-size:.82rem;color:#7eb8d4;">
+          Remember me (30 days)
+        </label>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn-connect">
+          <i class="bi bi-box-arrow-in-right me-2"></i>LOGIN
+        </button>
+      </div>
+    </form>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

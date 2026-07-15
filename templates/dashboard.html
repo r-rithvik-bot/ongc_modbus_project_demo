@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Live Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div id="alertsBanner" class="container-fluid px-3 py-0"></div>
+<div class="container-fluid px-3 py-3">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+      <h4 class="text-white mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-info"></i>Live Process Dashboard</h4>
+      <small class="text-muted">
+        Server: <span class="text-info">{{ host }}:{{ port }}</span> &nbsp;|&nbsp;
+        Tanks: <span class="text-info">{{ num_tanks }}</span> &nbsp;|&nbsp;
+        Refresh: <span class="text-info">{{ interval }}s</span>
+      </small>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="conn-badge"><span class="conn-dot" id="connDot"></span><span id="connText">Connecting...</span></div>
+      <small class="text-muted" id="lastUpdate">--</small>
+    </div>
+  </div>
+
+  <div class="row g-3" id="tanksContainer">
+    {% for tank_num in range(1, num_tanks + 1) %}
+    <div class="col-xl-6 col-12">
+      <div class="tank-card" id="tank-card-{{ tank_num }}">
+        <div class="tank-card-header d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <div class="tank-icon"><i class="bi bi-archive-fill"></i></div>
+            <div>
+              <div class="tank-title">Tank {{ tank_num }}</div>
+              <div class="tank-register-info">Registers {{ 40001 + (tank_num-1)*4 }}–{{ 40004 + (tank_num-1)*4 }}</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="health-badge" id="health-{{ tank_num }}">--</span>
+            <span class="status-chip status-waiting" id="status-{{ tank_num }}">
+              <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>WAITING
+            </span>
+          </div>
+        </div>
+
+        <div class="metric-grid mt-3">
+          <div class="metric-box" id="pressure-box-{{ tank_num }}">
+            <div class="metric-icon pressure-icon"><i class="bi bi-speedometer"></i></div>
+            <div class="metric-val" id="pressure-{{ tank_num }}">--</div>
+            <div class="metric-lbl">Pressure (PSI)</div>
+          </div>
+          <div class="metric-box" id="temp-box-{{ tank_num }}">
+            <div class="metric-icon temp-icon"><i class="bi bi-thermometer-half"></i></div>
+            <div class="metric-val" id="temperature-{{ tank_num }}">--</div>
+            <div class="metric-lbl">Temperature (°C)</div>
+          </div>
+          <div class="metric-box" id="flow-box-{{ tank_num }}">
+            <div class="metric-icon flow-icon"><i class="bi bi-wind"></i></div>
+            <div class="metric-val" id="flow-{{ tank_num }}">--</div>
+            <div class="metric-lbl">Flow Rate (m³/h)</div>
+          </div>
+          <div class="metric-box" id="level-box-{{ tank_num }}">
+            <div class="metric-icon level-icon"><i class="bi bi-water"></i></div>
+            <div class="metric-val" id="level-{{ tank_num }}">--</div>
+            <div class="metric-lbl">Tank Level (%)</div>
+            <div class="level-bar-wrap"><div class="level-bar" id="levelbar-{{ tank_num }}" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="row mt-3 g-2">
+          <div class="col-md-3 col-6"><div class="chart-box"><div class="chart-title">Pressure</div><canvas id="chart-pressure-{{ tank_num }}" height="40"></canvas></div></div>
+          <div class="col-md-3 col-6"><div class="chart-box"><div class="chart-title">Temperature</div><canvas id="chart-temperature-{{ tank_num }}" height="40"></canvas></div></div>
+          <div class="col-md-3 col-6"><div class="chart-box"><div class="chart-title">Flow Rate</div><canvas id="chart-flow-{{ tank_num }}" height="40"></canvas></div></div>
+          <div class="col-md-3 col-6"><div class="chart-box"><div class="chart-title">Tank Utilisation</div><canvas id="chart-pie-{{ tank_num }}" height="40"></canvas></div></div>
+        </div>
+
+        <div class="mt-2 text-end">
+          <small class="text-muted"><i class="bi bi-clock me-1"></i>Last updated: <span id="updated-{{ tank_num }}">--</span></small>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const NUM_TANKS  = {{ num_tanks }};
+const REFRESH_MS = {{ interval }} * 1000;
+const charts     = {};
+
+Chart.defaults.color     = '#7eb8d4';
+Chart.defaults.font.size = 10;
+
+function lineOpts(label, color) {
+  return {
+    type: 'line',
+    data: { labels: [], datasets: [{ label, data: [], borderColor: color,
+      backgroundColor: color + '22', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4 }] },
+    options: { animation: false, responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { grid: { color: 'rgba(0,180,255,.08)' }, ticks: { maxTicksLimit: 4 } } } }
+  };
+}
+
+function pieOpts() {
+  return {
+    type: 'doughnut',
+    data: { labels: ['Filled','Empty'],
+      datasets: [{ data: [0,100],
+        backgroundColor: ['#00b4ff','rgba(255,255,255,.06)'],
+        borderColor: ['#0070cc','rgba(255,255,255,.1)'], borderWidth: 1 }] },
+    options: { animation: false, responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 6 } } }, cutout: '65%' }
+  };
+}
+
+for (let t = 1; t <= NUM_TANKS; t++) {
+  charts['pressure-'    + t] = new Chart(document.getElementById('chart-pressure-'    + t), lineOpts('PSI',  '#00b4ff'));
+  charts['temperature-' + t] = new Chart(document.getElementById('chart-temperature-' + t), lineOpts('°C',   '#ff6b35'));
+  charts['flow-'        + t] = new Chart(document.getElementById('chart-flow-'        + t), lineOpts('m³/h', '#00ff88'));
+  charts['pie-'         + t] = new Chart(document.getElementById('chart-pie-'         + t), pieOpts());
+}
+
+function setHealth(el, health) {
+  el.className = 'health-badge';
+  el.classList.add(health === 'CRITICAL' ? 'health-critical' : health === 'WARNING' ? 'health-warning' : 'health-normal');
+  el.textContent = health || '--';
+}
+
+function setStatus(el, status) {
+  el.className = 'status-chip';
+  el.classList.add(status === 'ONLINE' ? 'status-online' : status === 'ERROR' ? 'status-error' : 'status-waiting');
+  el.innerHTML = '<i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>' + status;
+}
+
+function alertHtml(a) {
+  const cls = a.level === 'danger' ? 'alert-danger' : 'alert-warning';
+  return `<div class="alert ${cls} alert-dismissible py-1 px-3 mb-1" style="font-size:.8rem;">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>${a.message}
+    <button type="button" class="btn-close btn-close-white py-2" data-bs-dismiss="alert"></button></div>`;
+}
+
+async function fetchAndUpdate() {
+  try {
+    const json = await (await fetch('/api/live')).json();
+    const dot  = document.getElementById('connDot');
+    const txt  = document.getElementById('connText');
+    dot.style.background = json.connected ? '#00ff88' : '#ff4444';
+    txt.textContent      = json.connected ? 'CONNECTED' : 'DISCONNECTED';
+    document.getElementById('lastUpdate').textContent = json.timestamp;
+
+    const banner = document.getElementById('alertsBanner');
+    if (json.alerts && json.alerts.length > 0) {
+      banner.innerHTML = '<div class="container-fluid px-3 pt-2">' + json.alerts.map(alertHtml).join('') + '</div>';
+    }
+
+    for (let t = 1; t <= NUM_TANKS; t++) {
+      const td = json.tanks[String(t)];
+      if (!td) continue;
+
+      document.getElementById('pressure-'    + t).textContent = td.pressure    ?? '--';
+      document.getElementById('temperature-' + t).textContent = td.temperature ?? '--';
+      document.getElementById('flow-'        + t).textContent = td.flow_rate   ?? '--';
+      document.getElementById('level-'       + t).textContent = td.tank_level  ?? '--';
+      document.getElementById('updated-'     + t).textContent = td.last_updated || '--';
+
+      const bar = document.getElementById('levelbar-' + t);
+      const lvl = td.tank_level || 0;
+      bar.style.width = Math.min(lvl, 100) + '%';
+      bar.className   = 'level-bar' + (lvl > 90 ? ' level-bar-full' : lvl < 20 ? ' level-bar-empty' : '');
+
+      const pb = document.getElementById('pressure-box-' + t);
+      if (td.pressure > 145) pb.classList.add('metric-alert'); else pb.classList.remove('metric-alert');
+      const tb = document.getElementById('temp-box-' + t);
+      if (td.temperature > 45) tb.classList.add('metric-alert'); else tb.classList.remove('metric-alert');
+
+      setHealth(document.getElementById('health-' + t), td.health);
+      setStatus(document.getElementById('status-' + t), td.status);
+
+      const shortTs = (td.timestamps || []).map(x => x.slice(11,19));
+      ['pressure','temperature','flow'].forEach(p => {
+        const c = charts[p + '-' + t];
+        const key = p === 'flow' ? 'flow_history' : p + '_history';
+        c.data.labels            = shortTs;
+        c.data.datasets[0].data = td[key] || [];
+        c.update('none');
+      });
+
+      const filled = Math.min(Math.max(lvl, 0), 100);
+      charts['pie-' + t].data.datasets[0].data = [filled, 100 - filled];
+      charts['pie-' + t].update('none');
+    }
+  } catch(err) { console.error('Live data error:', err); }
+}
+
+fetchAndUpdate();
+setInterval(fetchAndUpdate, REFRESH_MS);
+</script>
+</body>
+</html>

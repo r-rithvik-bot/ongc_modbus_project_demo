@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ONGC – Configuration</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="ongc-body">
+{% include 'navbar.html' %}
+<div class="container py-4">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+      <div class="alert alert-{{ cat }} alert-dismissible py-2 mb-3" style="font-size:.85rem;">
+        <i class="bi bi-info-circle-fill me-1"></i>{{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <h4 class="text-white fw-bold mb-4">
+    <i class="bi bi-gear-fill me-2 text-info"></i>System Configuration
+  </h4>
+
+  <div class="ongc-card p-4 mb-4">
+    <div class="page-section-title">Modbus TCP Connection</div>
+    <form method="POST" action="/config">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label ongc-label">
+            <i class="bi bi-archive-fill me-1 text-info"></i>Number of Tanks
+          </label>
+          <input type="number" class="form-control ongc-input" name="num_tanks"
+                 min="1" max="20" value="{{ cfg.num_tanks }}" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label ongc-label">
+            <i class="bi bi-hdd-network-fill me-1 text-info"></i>IP Address
+          </label>
+          <input type="text" class="form-control ongc-input" name="host"
+                 value="{{ cfg.host }}" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label ongc-label">
+            <i class="bi bi-plug-fill me-1 text-info"></i>Port
+          </label>
+          <input type="number" class="form-control ongc-input" name="port"
+                 value="{{ cfg.port }}" min="1" max="65535" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label ongc-label">
+            <i class="bi bi-cpu-fill me-1 text-info"></i>Slave ID
+          </label>
+          <input type="number" class="form-control ongc-input" name="slave_id"
+                 value="{{ cfg.slave_id }}" min="1" max="247" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label ongc-label">
+            <i class="bi bi-stopwatch-fill me-1 text-info"></i>Refresh (seconds)
+          </label>
+          <input type="number" class="form-control ongc-input" name="interval"
+                 value="{{ cfg.interval }}" min="1" max="60" required/>
+        </div>
+      </div>
+
+      <div class="register-map-info p-3 mt-3 mb-3">
+        <div class="row text-center">
+          <div class="col-3">
+            <div class="reg-badge">40001</div>
+            <small class="text-muted">Pressure</small>
+          </div>
+          <div class="col-3">
+            <div class="reg-badge">40002</div>
+            <small class="text-muted">Temperature</small>
+          </div>
+          <div class="col-3">
+            <div class="reg-badge">40003</div>
+            <small class="text-muted">Flow Rate</small>
+          </div>
+          <div class="col-3">
+            <div class="reg-badge">40004</div>
+            <small class="text-muted">Tank Level</small>
+          </div>
+        </div>
+        <div class="text-center mt-2">
+          <small class="text-info">
+            <i class="bi bi-info-circle me-1"></i>
+            Tank N starts at register 40001 + (N-1)x4. Auto-generated.
+          </small>
+        </div>
+      </div>
+
+      <div class="alert-info-row mb-3">
+        <div class="alert-chip danger"><i class="bi bi-exclamation-triangle-fill"></i>P &gt; 145 PSI</div>
+        <div class="alert-chip danger"><i class="bi bi-thermometer-high"></i>T &gt; 45°C</div>
+        <div class="alert-chip warning"><i class="bi bi-water"></i>Level &gt; 90%</div>
+        <div class="alert-chip warning"><i class="bi bi-water"></i>Level &lt; 20%</div>
+      </div>
+
+      <div id="validation-errors" class="alert alert-danger mb-3"
+           style="display:none;font-size:.85rem;"></div>
+
+      <button type="submit" class="btn-connect" style="width:auto;padding:.7rem 2rem;">
+        <i class="bi bi-lightning-charge-fill me-2"></i>SAVE &amp; CONNECT
+      </button>
+
+    </form>
+  </div>
+
+</div>
+{% include 'footer.html' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const port     = parseInt(document.querySelector('[name=port]').value);
+    const slaveId  = parseInt(document.querySelector('[name=slave_id]').value);
+    const tanks    = parseInt(document.querySelector('[name=num_tanks]').value);
+    const interval = parseInt(document.querySelector('[name=interval]').value);
+    const host     = document.querySelector('[name=host]').value.trim();
+    const errors   = [];
+
+    if (!host)                         errors.push('IP Address is required.');
+    if (port < 1    || port > 65535)   errors.push('Port must be 1-65535.');
+    if (slaveId < 1 || slaveId > 247)  errors.push('Slave ID must be 1-247.');
+    if (tanks < 1   || tanks > 20)     errors.push('Tanks must be 1-20.');
+    if (interval < 1 || interval > 60) errors.push('Refresh must be 1-60 seconds.');
+
+    if (errors.length > 0) {
+      e.preventDefault();
+      const box = document.getElementById('validation-errors');
+      box.innerHTML = errors.map(err =>
+        '<div><i class="bi bi-exclamation-circle-fill me-2"></i>' + err + '</div>'
+      ).join('');
+      box.style.display = 'block';
+      box.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+</body>
+</html>

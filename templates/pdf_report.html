@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><title>ONGC Tank Data Report</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;font-size:11px;color:#1a1a2e;background:#fff}
+    .header{background:#0d2040;color:#fff;padding:16px 24px}
+    .header h1{font-size:16px;font-weight:700}
+    .header .sub{font-size:10px;color:#7eb8d4;margin-top:3px}
+    .meta{background:#f0f4f8;padding:10px 24px;font-size:10px;color:#4a4a6a;
+          display:flex;justify-content:space-between;border-bottom:2px solid #0d2040}
+    .section{padding:16px 24px}
+    .section-title{font-size:13px;font-weight:700;color:#0d2040;
+                   border-bottom:1px solid #dde;padding-bottom:4px;margin-bottom:10px}
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+    .stat-box{border:1px solid #dde;border-radius:6px;padding:10px}
+    .stat-box .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6a6a8a}
+    .stat-box .val{font-size:14px;font-weight:700;color:#0d2040}
+    .stat-box .sub{font-size:9px;color:#8a8aaa;margin-top:2px}
+    .tank-header{background:#0d2040;color:#fff;padding:6px 12px;border-radius:4px;
+                 font-size:11px;font-weight:700;margin:12px 0 6px}
+    table{width:100%;border-collapse:collapse;font-size:9.5px}
+    th{background:#0d2040;color:#fff;padding:5px 8px;text-align:left;font-weight:600}
+    td{padding:4px 8px;border-bottom:1px solid #eef}
+    tr:nth-child(even) td{background:#f8f9fc}
+    .alert-row td{background:#fff3f3!important;color:#c00}
+    .warning-row td{background:#fffbea!important;color:#7a5f00}
+    .footer{background:#0d2040;color:#7eb8d4;font-size:9px;
+            padding:8px 24px;text-align:center;margin-top:16px}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ONGC Cauvery Asset — Tank Monitoring Report</h1>
+    <div class="sub">Industrial Modbus TCP Monitoring &amp; Data Analytics Dashboard v2</div>
+  </div>
+  <div class="meta">
+    <span>Generated: {{ generated_at }}</span>
+    <span>Filter: {% if tank_filter %}Tank {{ tank_filter }}{% else %}All Tanks{% endif %}</span>
+    <span>Records: {{ records|length }}</span>
+    <span>Team: R. Rithvik | J. Gopi Ganesh</span>
+  </div>
+
+  {% if report.stats %}
+  <div class="section">
+    <div class="section-title">Analytics Summary</div>
+    {% for row in report.stats %}
+    <div class="tank-header">Tank {{ row.tank_number }} — {{ row.total_readings }} readings</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="lbl">Avg Pressure</div><div class="val">{{ row.avg_pressure }}</div>
+        <div class="sub">PSI | Max: {{ row.max_pressure }} | Min: {{ row.min_pressure }}</div></div>
+      <div class="stat-box"><div class="lbl">Avg Temperature</div><div class="val">{{ row.avg_temperature }}</div>
+        <div class="sub">°C | Max: {{ row.max_temperature }} | Min: {{ row.min_temperature }}</div></div>
+      <div class="stat-box"><div class="lbl">Avg Flow Rate</div><div class="val">{{ row.avg_flow }}</div>
+        <div class="sub">m³/h | Max: {{ row.max_flow }} | Min: {{ row.min_flow }}</div></div>
+      <div class="stat-box"><div class="lbl">Avg Tank Level</div><div class="val">{{ row.avg_level }}</div>
+        <div class="sub">% | Max: {{ row.max_level }} | Min: {{ row.min_level }}</div></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <div class="section-title">Historical Data (Latest {{ records|length }} Records)</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Timestamp</th><th>Tank</th>
+            <th>Pressure (PSI)</th><th>Temperature (°C)</th>
+            <th>Flow (m³/h)</th><th>Level (%)</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr class="{% if r.pressure > 145 or r.temperature > 45 %}alert-row
+                   {% elif r.tank_level > 90 or r.tank_level < 20 %}warning-row{% endif %}">
+          <td>{{ r.id }}</td><td>{{ r.timestamp }}</td><td>Tank {{ r.tank_number }}</td>
+          <td>{{ r.pressure }}</td><td>{{ r.temperature }}</td>
+          <td>{{ r.flow_rate }}</td><td>{{ r.tank_level }}</td>
+          <td>{% if r.pressure > 145 or r.temperature > 45 %}ALERT
+              {% elif r.tank_level > 90 or r.tank_level < 20 %}WARNING
+              {% else %}NORMAL{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="footer">ONGC Cauvery Asset — Industrial Modbus TCP Monitoring Dashboard v2 — Confidential &copy; 2024</div>
+  <script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>
