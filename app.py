@@ -11,7 +11,8 @@ from flask     import (Flask, render_template, request, redirect,
 from werkzeug.security import check_password_hash
 
 from config   import (DEFAULT_MODBUS_HOST, DEFAULT_MODBUS_PORT, DEFAULT_SLAVE_ID,
-                      DEFAULT_REFRESH_INTERVAL, DEFAULT_NUM_TANKS)
+                      DEFAULT_REFRESH_INTERVAL, DEFAULT_NUM_TANKS,
+                      SECRET_KEY, DEBUG)
 from database import (init_db, init_users_table,
                       get_history, get_all_for_export, save_config, load_config,
                       get_user_by_username, get_event_log, log_event)
@@ -23,7 +24,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 
 app            = Flask(__name__)
-app.secret_key = 'ONGC_MODBUS_PROJECT_2026'
+app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(minutes=30)
 
 # ── Bootstrap ──────────────────────────────────────────────────────────
@@ -281,6 +282,4 @@ if all([_sh, _sp, _ss, _sn, _si]):
 
 
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
+    app.run(debug=DEBUG, host='0.0.0.0', port=5000, use_reloader=False)

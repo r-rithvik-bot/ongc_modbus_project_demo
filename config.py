@@ -3,8 +3,8 @@
 import os
 
 # ── Flask ──────────────────────────────────────────────────────────────
-SECRET_KEY = "ONGC_MODBUS_PROJECT_2026"
-DEBUG      = True
+SECRET_KEY = os.environ.get("SECRET_KEY", "ONGC_MODBUS_PROJECT_2026")
+DEBUG      = os.environ.get("FLASK_ENV") == "development"
 
 # ── Database ───────────────────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(__file__)
